@@ -2,10 +2,10 @@
 
 const session = require('koa-generic-session');
 const redisStore = require('koa-redis');
+
 /**
  * Strapi session hook
  */
-
 module.exports = function (strapi) {
 	const hook = {
 
@@ -21,10 +21,9 @@ module.exports = function (strapi) {
 
 		initialize: function (cb) {
 
+			// store: redisStore({})
 			strapi.app.keys = ['keys', 'keykeys'];
 			strapi.app.use(session({
-				store: redisStore({
-				})
 			}));
 			console.log("initialized strapi-generic-session");
 
