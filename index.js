@@ -20,24 +20,30 @@ module.exports = function (strapi) {
 			}
 		},
 
-
 		/**
 		 * Initialize the hook
 		 */
 
 		initialize: function (cb) {
-
-			// store: redisStore({})
 			strapi.app.keys = ['keys', 'keykeys'];
 			let config = strapi.config.genericSession;
-			debugger;
+
+			var store = redisStore({
+				host: config.host,
+				port: config.port
+			});
 			strapi.app.use(session({
-				store: redisStore({
-					host: config.host,
-					port: config.port
-				})
+				store: store
 			}));
-			console.log("initialized strapi-generic-session");
+			strapi.log.info(`initialized strapi-generic-session`);
+
+			store.on('ready', () => {
+				console.log(`Successfully connected to Redis at ${config.host}:${config.port}`);
+			});
+
+			store.on('error', () => {
+				strapi.log.error(`Error while trying to connect to Redis at ${config.host}:${config.port}`);
+			});
 
 			cb();
 		}
