@@ -1,53 +1,61 @@
-'use strict';
+'use strict'
 
-const session = require('koa-generic-session');
-const redisStore = require('koa-redis');
+const session = require('koa-generic-session')
+const redisStore = require('koa-redis')
 
 /**
  * Strapi session hook
  */
 module.exports = function (strapi) {
-	const hook = {
+  var store
+  const hook = {
 
-		/**
-		* Default options
-		*/
+    /**
+    * Default options
+    */
 
-		defaults: {
-			genericSession: {
-				host: 'localhost',
-				port: 6379
-			}
-		},
+    defaults: {
+      genericSession: {
+        type: 'memory'
+      }
+    },
 
-		/**
-		 * Initialize the hook
-		 */
+    /**
+     * Initialize the hook
+     */
 
-		initialize: function (cb) {
-			strapi.app.keys = ['keys', 'keykeys'];
-			let config = strapi.config.genericSession;
+    initialize: function (cb) {
+      strapi.app.keys = ['keys', 'keykeys']
+      let config = strapi.config.genericSession
 
-			var store = redisStore({
-				host: config.host,
-				port: config.port
-			});
-			strapi.app.use(session({
-				store: store
-			}));
-			strapi.log.info(`initialized strapi-generic-session`);
+      switch (config.type) {
+      case 'redis':
+        store = redisStore({
+          host: config.host,
+          port: config.port
+        })
+        
+        store.on('ready', () => {
+          strapi.log.info(`Successfully connected to Redis at ${config.host}:${config.port}`)
+        })
 
-			store.on('ready', () => {
-				console.log(`Successfully connected to Redis at ${config.host}:${config.port}`);
-			});
+        store.on('error', () => {
+          strapi.log.error(`Error while trying to connect to Redis at ${config.host}:${config.port}`)
+        })
+        
+      default:
+        store = session.MemoryStore()
+        strapi.log.info(`Connected to default memory store`)
+      }
+      
+      strapi.app.use(session({
+        store
+      }))
+      strapi.log.info(`initialized strapi-generic-session`)
 
-			store.on('error', () => {
-				strapi.log.error(`Error while trying to connect to Redis at ${config.host}:${config.port}`);
-			});
+      cb()
+    }
+  }
 
-			cb();
-		}
-	};
-
-	return hook;
-};
+  return hook
+}
